@@ -1,5 +1,7 @@
 import { exec } from 'child_process';
 import mqtt, { MqttClient } from 'mqtt';
+import { Kafka } from 'kafkajs';
+
 
 // Thresholds for scaling
 const MAX_ATHLETES_PER_PROCESSOR = 5;
@@ -60,5 +62,48 @@ function scaleProcessorService() {
     }
 
     console.log(`Processor service scaled to ${scaledReplicas} replicas: ${stdout}`);
+
+    // Now update the Kafka topic partitions based on the new number of replicas
+    updateKafkaPartitions('athlete-fitness-data', scaledReplicas);
   });
+}
+
+
+// Kafka Partition Management Function
+async function updateKafkaPartitions(topic: string, newPartitionsCount: number) {
+  const kafka = new Kafka({
+    clientId: 'partition-manager',
+    brokers: ['kafka:9092'],
+  });
+
+  const admin = kafka.admin();
+
+  try {
+    await admin.connect();
+
+    // Get the current partition count
+    const topicMetadata = await admin.fetchTopicMetadata({ topics: [topic] });
+    const currentPartitionsCount = topicMetadata.topics[0].partitions.length;
+
+    // Only add more partitions if needed
+    if (currentPartitionsCount < newPartitionsCount) {
+      await admin.createPartitions({
+        topicPartitions: [
+          {
+            topic,
+            count: newPartitionsCount, // Set new partition count
+          },
+        ],
+      });
+      console.log(`Partitions updated for topic ${topic}. Now has ${newPartitionsCount} partitions.`);
+      console.log(`Current partition count for ${topic}: ${currentPartitionsCount}`);
+    } else {
+      console.log(`Topic ${topic} already has sufficient partitions (${currentPartitionsCount}).`);
+    }
+
+  } catch (error) {
+    console.error('Error updating partitions:', error);
+  } finally {
+    await admin.disconnect();
+  }
 }

@@ -11,7 +11,6 @@ export interface AthleteData {
   maxHeartRate: number;
   totalDistance: number;
   elevationGain: number;
-  pace?: number,
   totalCalories?: number;
   timestamp: string;
   startTime: Date;

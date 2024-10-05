@@ -10,7 +10,7 @@ export async function createKafkaConsumer(topic: string, groupId: string, proces
   const consumer: Consumer = kafka.consumer({ groupId });
 
   await consumer.connect();
-  await consumer.subscribe({ topic, fromBeginning: true });
+  await consumer.subscribe({ topic, fromBeginning: false }); // False as new processor will re-process otherwise
 
   await consumer.run({
     eachMessage: async ({ message }) => {
