@@ -32,9 +32,9 @@ function setAthleteData(athleteData) {
                 heartRate: athleteData.heartRate,
                 totalDistance: athleteData.totalDistance,
                 elevationGain: athleteData.elevationGain,
-                pace: athleteData.pace,
                 totalCalories: athleteData.totalCalories,
-                timestamp: athleteData.timestamp
+                timestamp: athleteData.timestamp,
+                startTime: athleteData.startTime
             }, { merge: true });
             // Append new data to `historicalFitnessData`
             const historicalDataCol = (0, firestore_1.collection)(firebaseConfig_1.db, 'historicalFitnessData');
@@ -44,7 +44,6 @@ function setAthleteData(athleteData) {
                 heartRate: athleteData.heartRate,
                 totalDistance: athleteData.totalDistance,
                 elevationGain: athleteData.elevationGain,
-                pace: athleteData.pace,
                 totalCalories: athleteData.totalCalories,
                 timestamp: athleteData.timestamp
             });

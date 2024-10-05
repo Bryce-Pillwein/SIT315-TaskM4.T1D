@@ -4,20 +4,24 @@ import { FitnessMessage } from "../types/FitnessMessage";
 
 const aggregationMap: Record<string, any> = {};
 
+
 /**
  * Initialize aggregation data for an athlete
+ * @param athleteId 
  * @param fitnessData 
+ * @param preserveStartTime 
  */
-function initializeAggregation(athleteId: string, fitnessData: FitnessMessage) {
+function initializeAggregation(athleteId: string, fitnessData: FitnessMessage, preserveStartTime?: boolean) {
   aggregationMap[athleteId] = {
     heartRateSum: fitnessData.heartRate,
     dataCount: 1,
     totalDistance: fitnessData.totalDistance,
     elevationGain: fitnessData.elevationGain,
-    startTime: new Date(fitnessData.timestamp), // Save the first timestamp as startTime
-    weight: fitnessData.weight || 70 // Default weight if not provided
+    startTime: preserveStartTime ? aggregationMap[athleteId].startTime : new Date(fitnessData.timestamp), // Preserve existing startTime
+    weight: fitnessData.weight || 70, // Default weight if not provided
   };
 }
+
 
 /**
  * Update aggregation data for an athlete
@@ -107,13 +111,18 @@ export async function processFitnessData(fitnessData: FitnessMessage) {
       const calories = calculateCalories(timeDiff, athleteData.weight);
 
       // Only save pace in the latest data, and continue processing
-      await saveAggregatedData(athleteId, fitnessData, avgHeartRate, calories);
+      /**
+       * 
+       * 
+       * CHANGE
+       */
+      // await saveAggregatedData(athleteId, fitnessData, avgHeartRate, calories);
 
-      // Reset aggregation data but preserve startTime
-      aggregationMap[athleteId].startTime = athleteData.startTime; // Keep the original start time
-      initializeAggregation(athleteId, fitnessData);
+      // Reset aggregation data but preserve the original startTime
+      initializeAggregation(athleteId, fitnessData, true); // Pass `true` to preserve startTime
     }
   } catch (error) {
     console.error(`Error processing fitness data for athlete ${athleteId}:`, error);
   }
 }
+

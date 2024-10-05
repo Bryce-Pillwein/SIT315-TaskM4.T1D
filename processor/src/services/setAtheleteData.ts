@@ -41,7 +41,6 @@ export async function setAthleteData(athleteData: AthleteData) {
       timestamp: athleteData.timestamp
     });
 
-    console.log(`Data for athlete ${athleteData.athleteId} updated successfully.`);
   } catch (error) {
     console.error("Error setting athlete data: ", error);
     throw error;

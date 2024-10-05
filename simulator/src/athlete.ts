@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { AthleteData } from './types/AthleteData';
 import { Location } from './types/Location';
 import { calculateMaxHeartRate, generateAge, generateRandomName, generateSex, generateWeight } from './utils/athleteConstructors';
-import { FITNESS_DATA_TOPIC, KAFKA_BROKERS, MQTT_BROKER_URL } from './config';
 import roundToTwo from './utils/roundToTwo';
 
 class Athlete {
@@ -16,21 +15,21 @@ class Athlete {
   mqttClient: MqttClient;
   currentDirection: { lat: number; lon: number };
   updatesInSameDirection: number;
+  updateInterval: NodeJS.Timeout | null = null;
 
-  constructor() {
-    this.id = `athlete-${uuidv4()}`;
-    this.athleteData = this.initializeAthleteData();
+  constructor(athleteIndex: number) {
+    this.id = `athlete-${athleteIndex}`; // Use athleteIndex to create a unique athlete ID
+    this.athleteData = this.initializeAthleteData(athleteIndex); // Pass index if necessary for data
     this.location = this.initializeLocation();
 
     this.kafka = new Kafka({
       clientId: 'fitness-tracker',
-      brokers: KAFKA_BROKERS,
+      brokers: ['kafka:9092'],
     });
 
     this.producer = this.kafka.producer();
-    this.mqttClient = mqtt.connect(MQTT_BROKER_URL);
+    this.mqttClient = mqtt.connect('mqtt://broker.hivemq.com:1883');
 
-    // Initialize direction and persistence variables
     this.currentDirection = this.randomDirection();
     this.updatesInSameDirection = 0;
   }
@@ -44,34 +43,30 @@ class Athlete {
     this.mqttClient.on('connect', () => {
       console.log(`Athlete ${this.athleteData.name} connected to MQTT broker`);
 
-      setInterval(() => {
-        // Calculate distance once and use it in both updates
-        const distance = roundToTwo(Math.random() * (30 - 15) + 15); // Random distance between 15 and 30 meters
+      this.updateInterval = setInterval(() => {
+        const distance = roundToTwo(Math.random() * (30 - 15) + 15);
 
-        // Update location with persistent direction for more human-like movement
         this.location = this.updateLocation(this.location, distance);
-
-        // Update athlete data
         this.updateAthleteData(distance);
 
-        // Publish data to MQTT and Kafka
         this.publishGPSData();
         this.publishFitnessData();
-      }, 5000); // Data updates every 5 seconds
+      }, 5000);
     });
   }
 
   /**
-   * Initialise Athlete Data
+   * Initialize Athlete Data
+   * @param athleteIndex
    * @returns {AthleteData} Athlete Data
    */
-  initializeAthleteData(): AthleteData {
+  initializeAthleteData(athleteIndex: number): AthleteData {
     const name = generateRandomName();
     const age = generateAge();
     const weight = generateWeight();
     const gender = generateSex();
     const maxHeartRate = calculateMaxHeartRate(age);
-    const initialHeartRate = roundToTwo(Math.random() * (100 - 60) + 60); // Start heart rate between 60 and 100 BPM
+    const initialHeartRate = roundToTwo(Math.random() * (100 - 60) + 60); // Start HR btwn 60 - 100 BPM
 
     return {
       athleteId: this.id,
@@ -194,10 +189,10 @@ class Athlete {
     try {
       const fitnessData = { ...this.athleteData };
       await this.producer.send({
-        topic: FITNESS_DATA_TOPIC,
+        topic: 'athlete-fitness-data',
         messages: [{ value: JSON.stringify(fitnessData) }],
       });
-      console.log(`Fitness data published to Kafka from ${this.athleteData.name}:`);
+      // console.log(`Fitness data published to Kafka from ${this.athleteData.name}:`);
     } catch (error) {
       console.error(`Failed to publish fitness data from ${this.athleteData.name}:`, error);
     }
@@ -213,7 +208,7 @@ class Athlete {
         if (error) {
           console.error(`Failed to publish GPS data to MQTT from ${this.athleteData.name}:`, error);
         } else {
-          console.log(`GPS data published to MQTT from ${this.athleteData.name}`);
+          // console.log(`GPS data published to MQTT from ${this.athleteData.name}`);
         }
       });
     } catch (error) {
@@ -221,8 +216,17 @@ class Athlete {
     }
   }
 
+  /**
+   * Shut down the athlete's activity, stopping data updates
+   */
   async shutdown() {
     console.log(`Shutting down athlete ${this.athleteData.name}`);
+
+    // Clear the interval to stop further updates
+    if (this.updateInterval) {
+      clearInterval(this.updateInterval);
+    }
+
     await this.producer.disconnect();
     this.mqttClient.end();
   }

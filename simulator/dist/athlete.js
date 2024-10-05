@@ -151,7 +151,7 @@ class Athlete {
      */
     updateLocation(currentLocation, distance) {
         // Change direction every 10 updates (or after traveling a certain distance)
-        if (this.updatesInSameDirection >= 10) {
+        if (this.updatesInSameDirection >= 50) {
             this.currentDirection = this.randomDirection(); // Change direction
             this.updatesInSameDirection = 0; // Reset counter
         }

@@ -45,14 +45,11 @@ function updateAggregation(athleteId, fitnessData) {
  * @param timeDiff
  * @param weight
  */
-function calculateMetrics(totalDistance, timeDiff, weight) {
-    // Calculate pace (in minutes per kilometer)
-    const totalTimeInMinutes = timeDiff / 60;
-    const pace = totalDistance > 0 ? totalTimeInMinutes / totalDistance : 0;
+function calculateCalories(timeDiff, weight) {
     // Estimate calories burned (example formula: weight * MET * time / 60)
     const MET = 8; // Assumed MET for running
     const caloriesBurned = weight * MET * (timeDiff / 3600); // calories burned in the time interval
-    return { pace, caloriesBurned };
+    return caloriesBurned;
 }
 /**
  * Save aggregated fitness data to Firestore
@@ -61,7 +58,7 @@ function calculateMetrics(totalDistance, timeDiff, weight) {
  * @param avgHeartRate
  * @param metrics
  */
-function saveAggregatedData(athleteId, fitnessData, avgHeartRate, metrics) {
+function saveAggregatedData(athleteId, fitnessData, avgHeartRate, caloriesBurned) {
     return __awaiter(this, void 0, void 0, function* () {
         const aggregatedData = {
             athleteId,
@@ -77,7 +74,7 @@ function saveAggregatedData(athleteId, fitnessData, avgHeartRate, metrics) {
             weight: aggregationMap[athleteId].weight,
         };
         // Add calculated pace and calories burned to aggregated data
-        const enrichedData = Object.assign(Object.assign({}, aggregatedData), { pace: Math.round(metrics.pace * 100) / 100, totalCalories: Math.round(metrics.caloriesBurned * 100) / 100 });
+        const enrichedData = Object.assign(Object.assign({}, aggregatedData), { totalCalories: Math.round(caloriesBurned * 100) / 100 });
         // Pass all fields including age and gender to the `setAthleteData` function
         yield (0, setAtheleteData_1.setAthleteData)(enrichedData);
         console.log(`Aggregated fitness data saved for ${athleteId}`);
@@ -105,9 +102,9 @@ function processFitnessData(fitnessData) {
             // If 30 seconds have passed, calculate pace and calories
             if (timeDiff >= 30) {
                 const avgHeartRate = athleteData.heartRateSum / athleteData.dataCount;
-                const metrics = calculateMetrics(athleteData.totalDistance, timeDiff, athleteData.weight);
+                const calories = calculateCalories(timeDiff, athleteData.weight);
                 // Only save pace in the latest data, and continue processing
-                yield saveAggregatedData(athleteId, fitnessData, avgHeartRate, metrics);
+                yield saveAggregatedData(athleteId, fitnessData, avgHeartRate, calories);
                 // Reset aggregation data but preserve startTime
                 aggregationMap[athleteId].startTime = athleteData.startTime; // Keep the original start time
                 initializeAggregation(athleteId, fitnessData);

@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    ports:
+      - "2181:2181"
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_PORT: 2181
+      ZOO_SERVERS: server.1=zookeeper:2888:3888;2181
+
+  kafka:
+    image: wurstmeister/kafka:latest
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_HOST://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+
+  simulator:
+    image: my_simulator
+    environment:
+      - CONTAINER_COUNT=4 
+      - CONTAINER_INDEX={{.Task.Slot}} # ID for container, acts as index
+    deploy:
+      mode: replicated
+      replicas: 4 # Initial number of replicas for the simulator
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    ports:
+      - "4000:4000"
+
+  processor:
+    image: my_processor
+    environment:
+      - CONTAINER_INDEX={{.Task.Slot}}
+    deploy:
+      mode: replicated
+      replicas: 1 # Adjust the number of processor containers based on demand
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    depends_on:
+      - kafka
+
+  scaler:
+      image: my_scaler
+      build:
+        context: ./scaler
+        dockerfile: Dockerfile
+      deploy:
+        mode: replicated
+        replicas: 1
+      depends_on:
+        - processor
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock

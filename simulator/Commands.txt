@@ -1,0 +1,26 @@
+========= Docker Commands =======
+docker build -t simulator .
+
+docker run -p 4000:4000 simulator
+
+
+
+
+=== Docker Swarm ==
+
+docker build -t my_simulator ./simulator
+docker build -t my_processor ./processor
+
+docker stack deploy -c docker-compose.yml my_stack
+
+
+# KILL for updates
+docker stack rm my_stack
+
+
+
+
+// Config ts
+export const KAFKA_BROKERS = ['kafka:9092'];
+export const MQTT_BROKER_URL = 'mqtt://broker.hivemq.com:1883';
+export const FITNESS_DATA_TOPIC = 'athlete-fitness-data';

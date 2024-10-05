@@ -4,12 +4,12 @@ import { Firestore, getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBGmMx4LJNPGzj5E9-hWyZ2rD2DF-36dtg",
-  authDomain: "sit315-project-iot.firebaseapp.com",
-  projectId: "sit315-project-iot",
-  storageBucket: "sit315-project-iot.appspot.com",
-  messagingSenderId: "1095749398100",
-  appId: "1:1095749398100:web:583999b5d5a08d4f2547c1"
+  apiKey: "AIzaSyDwQzFnawBqUUqTzjKTUu7j2y07lpW2_jA",
+  authDomain: "sit315-project.firebaseapp.com",
+  projectId: "sit315-project",
+  storageBucket: "sit315-project.appspot.com",
+  messagingSenderId: "978009462114",
+  appId: "1:978009462114:web:01973976efb9d1b7c8883b"
 };
 
 /**

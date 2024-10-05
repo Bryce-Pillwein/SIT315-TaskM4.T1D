@@ -1,10 +1,9 @@
 import { Kafka, Consumer } from 'kafkajs';
-import { KAFKA_BROKERS } from '../config/config';
 
 // Create and configure Kafka consumer
 export const kafka = new Kafka({
   clientId: 'fitness-processor',
-  brokers: KAFKA_BROKERS,
+  brokers: ['kafka:9092'],
 });
 
 export async function createKafkaConsumer(topic: string, groupId: string, processMessage: (message: any) => Promise<void>) {
